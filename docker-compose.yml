@@ -1,0 +1,36 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - JWT_SECRET=supersecret
+      - JWT_EXPIRES_IN=1h
+      - REDIS_URL=redis://redis:6379
+      - DATA_DIR=/usr/src/app/data
+    volumes:
+      - ./data:/usr/src/app/data
+    depends_on:
+      - redis
+
+  worker:
+    build: .
+    command: node worker/task.worker.js
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - DATA_DIR=/usr/src/app/data
+    volumes:
+      - ./data:/usr/src/app/data
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+volumes:
+  redis-data:
