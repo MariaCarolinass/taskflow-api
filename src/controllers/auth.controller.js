@@ -1,95 +1,50 @@
-import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
-import { readData, writeData } from "../db/fileDatabase.js";
-import dotenv from "dotenv";
+import AuthService from "../services/auth.service.js";
+import { CreateUserDTO } from "../dtos/user.dto.js";
 import { createClient } from "redis";
 
-dotenv.config();
-
-const USERS_FILE = 'users.json';
-
+const service = new AuthService();
 const redisClient = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
-redisClient.connect();
+redisClient.connect().catch(() => {});
 
 const AuthController = {
     register: async (req, res) => {
-        const { name, email, password, role = "user" } = req.body;
-        
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: 'Name, email, and password are required.' });
-        }
-        
         try {
-            const users = readData(USERS_FILE);
-            const existingUser = users.find(u => u.email === email);
-            if (existingUser) {
-                return res.status(409).json({ error: 'Email already in use.' });
-            }
-            
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = {
-                id: Date.now().toString(),
-                name,
-                email,
-                password: hashedPassword,
-                role,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-            };
-            
-            users.push(newUser);
-            writeData(USERS_FILE, users);
-
-            res.status(201).json({ message: "User registered successfully", user: newUser });
-        } catch (error) {
-            console.error("Failed to register user:", error);
-            res.status(500).json({ error: 'Failed to register user.' });
+          const dto = new CreateUserDTO(req.body);
+          const user = await service.register(dto);
+          res.status(201).json({ message: "User registered", user });
+        } catch (err) {
+          if (err.message === "EMAIL_IN_USE") return res.status(409).json({ error: "Email already in use" });
+          console.error(err);
+          res.status(500).json({ error: "Failed to register" });
+        }
+    },
+    
+    login: async (req, res) => {
+        try {
+            const { token, user } = await service.login(req.body);
+            res.json({ message: "Login successful", token, user });
+        } catch (err) {
+            if (err.message === "INVALID_CREDENTIALS") return res.status(401).json({ error: "Invalid credentials" });
+            console.error(err);
+            res.status(500).json({ error: "Failed to login" });
         }
     },
 
-    login: async (req, res) => {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password are required.' });
-        }
-
-        try {
-            const users = readData(USERS_FILE);
-            const user = users.find(u => u.email === email);
-            if (!user) {
-                return res.status(404).json({ error: 'User not found.' });
-            }
-
-            const valid = await bcrypt.compare(password, user.password);
-            if (!valid) {
-                return res.status(401).json({ error: 'Invalid password.' });
-            }
-
-            const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-            res.status(200).json({ message: "Login successful", token });
-        } catch (error) {
-            console.error("Failed to login:", error);
-            res.status(500).json({ error: 'Failed to login.' });
-        }
-    }, 
-
     logout: async (req, res) => {
-        const token = req.headers.authorization?.split(' ')[1];
-        if (!token) {
-            return res.status(400).json({ error: 'Token is required for logout.' });
-        }
-        
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            const exp = decoded.exp;
-            const currentTime = Math.floor(Date.now() / 1000);
-            const ttl = exp - currentTime;
-            await redisClient.setEx(token, ttl, 'blacklisted');
-            res.status(200).json({ message: 'Logout successful' });
-        } catch (error) {
-            console.error("Failed to logout:", error);
-            res.status(500).json({ error: 'Failed to logout.' });
+            const authHeader = req.headers.authorization;
+            const token = authHeader?.split(" ")[1];
+            if (!token) return res.status(400).json({ error: "Token required" });
+
+            const decoded = await import("jsonwebtoken").then(m => m.default.verify(token, process.env.JWT_SECRET));
+            const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+            if (ttl > 0) {
+            await redisClient.setEx(`blacklist:${token}`, ttl, "1");
+            }
+            res.json({ message: "Logout successful" });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: "Failed to logout" });
         }
     }
 };
