@@ -1,0 +1,24 @@
+extends ../layouts/main.pug
+
+block content
+  .row.justify-content-center
+    .col-md-4
+      h2.text-center.mb-3 Registrar
+
+      if error
+        .alert.alert-danger #{error}
+
+      form(action="/register" method="POST")
+        .mb-3
+          label.form-label Nome
+          input.form-control(type="text" name="name" required)
+
+        .mb-3
+          label.form-label Email
+          input.form-control(type="email" name="email" required)
+
+        .mb-3
+          label.form-label Senha
+          input.form-control(type="password" name="password" required)
+
+        button.btn.btn-success.w-100(type="submit") Criar conta

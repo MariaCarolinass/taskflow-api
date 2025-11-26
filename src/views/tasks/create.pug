@@ -1,0 +1,31 @@
+extends ../layouts/main.pug
+
+block content
+  .row.justify-content-center
+    .col-md-6
+      h2.text-center.mb-3 Criar Tarefa
+
+      if error
+        .alert.alert-danger #{error}
+
+      form(action="/tasks" method="POST")
+        .mb-3
+          label.form-label Título
+          input.form-control(type="text" name="title" required)
+
+        .mb-3
+          label.form-label Descrição
+          textarea.form-control(name="description" rows="4")
+
+        .mb-3
+          label.form-label Status
+          select.form-select(name="status")
+            option(value="pending") Pendente
+            option(value="in-progress") Em progresso
+            option(value="completed") Concluída
+
+        .mb-3
+          label.form-label Data de Vencimento
+          input.form-control(type="date" name="dueDate")
+
+        button.btn.btn-success.w-100(type="submit") Criar Tarefa

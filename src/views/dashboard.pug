@@ -1,0 +1,36 @@
+extends layouts/main.pug
+
+block content
+  h1 TaskFlow
+  p Gerencie tarefas, fluxos e automações de forma simples e rápida.
+  br
+
+  h2 Lista de Tasks
+
+  if tasks.length === 0
+    p Nenhuma task cadastrada
+  else 
+    a.btn.btn-success(href="/tasks/create") Nova Task
+
+    table.table.mt-3
+      thead
+        tr
+          th Título
+          th Status
+          th Data de Vencimento
+          th Criada em
+          th Ações
+      tbody
+        each task in tasks
+          tr
+            td= task.title
+            td
+              - const statusMap = { 'pending': 'Pendente', 'in-progress': 'Em progresso', 'completed': 'Concluída' }
+              = statusMap[task.status] || task.status
+            td= task.dueDate ? (() => { const d = new Date(task.dueDate); const day = String(d.getUTCDate()).padStart(2, '0'); const month = String(d.getUTCMonth() + 1).padStart(2, '0'); const year = d.getUTCFullYear(); return `${day}/${month}/${year}`; })() : 'Não informado'
+            td= task.createdAt ? new Date(task.createdAt).toLocaleDateString('pt-BR') : '-'
+            td
+              a.btn.btn-sm.btn-info.me-2(href=`/tasks/${task._id}`) Ver mais
+              a.btn.btn-sm.btn-primary.me-2(href=`/tasks/edit/${task._id}`) Editar
+              form.d-inline(method="POST" action=`/tasks/delete/${task._id}` onsubmit="return confirm('Tem certeza que deseja excluir esta tarefa?');")
+                button.btn.btn-sm.btn-danger(type="submit") Excluir
