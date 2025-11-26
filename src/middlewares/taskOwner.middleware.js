@@ -1,25 +1,26 @@
-import { readData } from "../db/fileDatabase.js";
+import TaskRepository from "../repositories/task.repository.js";
+const repo = new TaskRepository();
 
-const DATA_FILE = "tasks.json";
+const TaskOwnerMiddleware = async (req, res, next) => {
+  const { id } = req.params;
+  const { user } = req;
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
 
-export const TaskOwnerMiddleware = async (req, res, next) => {
-    const { id } = req.params;
-    const { user } = req;
+  if (user.role === "admin") return next();
 
-    if (user.role === "admin") {
-        return next();
-    }
+  const task = await repo.findById(id);
+  if (!task) return res.status(404).json({ error: "Task not found" });
 
-    const tasks = readData(DATA_FILE);
-    const task = tasks.find(t => t.id === id);
+  const ownerId =
+    typeof task.userId === "object" && task.userId._id
+      ? task.userId._id.toString()
+      : task.userId.toString();
 
-    if (!task) {
-        return res.status(404).json({ error: "Task not found." });
-    }
+  if (ownerId !== user.id) {
+    return res.status(403).json({ error: "Forbidden" });
+  }
 
-    if (task.userId !== user.id) {
-        return res.status(403).json({ error: "Forbidden: you can only modify your own tasks." });
-    }
-
-    next();
+  next();
 };
+
+export default TaskOwnerMiddleware;

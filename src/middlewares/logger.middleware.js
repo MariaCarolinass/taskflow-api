@@ -1,10 +1,10 @@
 const LoggerMiddleware = (req, res, next) => {
     const start = Date.now();
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        console.log(`${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`);
+    res.on("finish", () => {
+      const ms = Date.now() - start;
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl} -> ${res.statusCode} (${ms} ms)`);
     });
     next();
 };
-
-export default LoggerMiddleware;
+  
+export default LoggerMiddleware;  

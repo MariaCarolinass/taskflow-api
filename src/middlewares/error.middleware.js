@@ -1,8 +1,8 @@
 const ErrorMiddleware = (err, req, res, next) => {
-    console.error("Erro interno:", err);
-    res.status(err.status || 500).json({
-        error: err.message || "Erro interno do servidor",
+    console.error(err);
+    res.status(err.status || 500).json({ 
+        error: err.message || "Internal server error" 
     });
 };
 
-export default ErrorMiddleware;
+export default ErrorMiddleware;  
