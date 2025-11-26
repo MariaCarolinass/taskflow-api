@@ -1,6 +1,8 @@
 import express from 'express';
 import path from "path";
 import { fileURLToPath } from "url";
+import session from "express-session";
+import MongoStore from "connect-mongo";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -25,6 +27,24 @@ app.set("view engine", "pug");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+app.use(
+    session({
+      secret: process.env.SESSION_SECRET || "taskflow-secret-key",
+      resave: false,
+      saveUninitialized: false,
+      store: MongoStore.create({
+        mongoUrl: process.env.MONGO_URI,
+        dbName: "taskflow",
+        collectionName: "sessions",
+      }),
+      cookie: {
+        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24, // 24h
+      },
+    })
+);  
 
 app.use(LoggerMiddleware);
 app.use(viewUserMiddleware);
