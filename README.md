@@ -12,6 +12,7 @@ A API conta com autenticação via JWT, validação com Joi, mensagens publicada
 taskflow-api/
 ├─ src/
 │  ├─ controllers/
+│  ├─ db/
 │  ├─ services/
 │  ├─ repositories/
 │  ├─ dtos/
@@ -19,10 +20,9 @@ taskflow-api/
 │  ├─ middlewares/
 │  ├─ validators/
 │  ├─ routes/
-│  └─ config/
+│  └─ views/
 ├─ worker/
-├─ data/
-├─ .env
+├─ .env.example
 ├─ Dockerfile
 ├─ docker-compose.yml
 ├─ package.json
