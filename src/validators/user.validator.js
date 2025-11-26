@@ -1,9 +1,9 @@
-import Joi from 'joi';
+import Joi from "joi";
 
 export const updateUserSchema = Joi.object({
-    name: Joi.string().min(3).max(50).optional(),
+    name: Joi.string().min(2).max(50).optional(),
     email: Joi.string().email().optional(),
-    role: Joi.string().valid('user', 'admin').optional(),
+    role: Joi.string().valid("user", "admin").optional()
 });
 
 export const validateBody = (schema) => (req, res, next) => {
