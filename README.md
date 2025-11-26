@@ -165,9 +165,16 @@ curl -X PUT http://localhost:3000/api/v1/tasks/<TASK_ID> -H "Content-Type: appli
 
 ### Ver mensagens publicadas
 
+Execute:
+
 ```
 docker exec -it redis redis-cli
-SUBSCRIBE taskEvents
+```
+
+Escutar todos os eventos criados:
+
+```
+PSUBSCRIBE *
 ```
 
 ---
