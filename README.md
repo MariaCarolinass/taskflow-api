@@ -87,6 +87,12 @@ npm run dev
 docker-compose up --build -d
 ```
 
+A aplicação vai está rodando em:
+
+```
+http://localhost:3000/
+```
+
 ---
 
 ## Rotas da API
