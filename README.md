@@ -1,18 +1,8 @@
 # TaskFlow API
 
-API REST simples para gerenciamento de tarefas com **Node.js**, **Express** e **mensageria via Redis**.
+TaskFlow API é uma aplicação Node.js desenvolvida para gerenciar tarefas utilizando arquitetura limpa com **Controller**, **Service**, **Repository**, **DTO**, **Middleware** e banco de dados **MongoDB Atlas**.
 
----
-
-## Funcionalidades
-
-- CRUD de usuários e tarefas
-- Autenticação JWT
-- RBAC (controle de acesso por papel)
-- Validação de dados com Joi
-- Logging de requisições
-- Worker que consome eventos de tarefas via Redis
-- Persistência simples com arquivos JSON
+A API conta com autenticação via JWT, validação com Joi, mensagens publicadas em Redis e um worker para processar eventos.
 
 ---
 
@@ -22,11 +12,14 @@ API REST simples para gerenciamento de tarefas com **Node.js**, **Express** e **
 taskflow-api/
 ├─ src/
 │  ├─ controllers/
+│  ├─ services/
+│  ├─ repositories/
+│  ├─ dtos/
 │  ├─ models/
 │  ├─ middlewares/
 │  ├─ validators/
 │  ├─ routes/
-│  └─ db/
+│  └─ config/
 ├─ worker/
 ├─ data/
 ├─ .env
@@ -42,79 +35,116 @@ taskflow-api/
 ## Tecnologias
 
 - Node.js + Express
+- MongoDB Atlas + Mongoose
 - Redis (mensageria)
 - Joi (validação)
 - bcrypt (hash de senhas)
 - JWT (autenticação)
+- Docker / Docker Compose
 
 ---
 
-## Rodando localmente
+## Funcionalidades
+
+- CRUD de usuários e tarefas
+- Autenticação JWT
+- RBAC (controle de acesso por papel)
+- Validação de dados com Joi
+- Logging de requisições
+- Worker que consome eventos de tarefas via Redis
+
+---
+
+## Configuração do Ambiente
+
+### Crie o arquivo `.env`
+
+```
+cp .env.example .env
+```
+
+---
+
+## Executando o projeto
+
+### Sem Docker
 
 1. Instalar dependências:
 
-```bash
+```
 npm install
 ```
 
-2. Criar arquivo `.env`:
-
-```
-PORT=3000
-JWT_SECRET=supersecret
-JWT_EXPIRES_IN=1h
-REDIS_URL=redis://localhost:6379
-DATA_DIR=./data
-```
-
-3. Rodar API:
+2. Rodar API:
 
 ```bash
 npm run dev
 ```
 
-4. Rodar worker:
+### Com Docker
 
-```bash
-node worker/task.worker.js
+```
+docker-compose up --build -d
 ```
 
 ---
 
-## Rodando com Docker
+## Rotas da API
 
-```bash
-docker-compose up --build
-```
+### Autenticação
 
-- API na porta `3000`
-- Redis na porta `6379`
-- Worker consumindo eventos de tasks
+- `POST /api/v1/auth/register` - registrar usuário
+- `POST /api/v1/auth/login` - login
+- `POST /api/v1/auth/logout` - logout
+
+### Usuários
+
+- `GET /api/v1/users/` - listar todos
+- `GET /api/v1/users/:id` - buscar por ID
+- `PUT /api/v1/users/:id` - atualizar
+- `DELETE /api/v1/users/:id` - deletar
+
+### Tarefas
+
+- `GET /api/v1/tasks/` - listar tasks
+- `GET /api/v1/tasks/:id` - buscar task
+- `POST /api/v1/tasks/` - criar task
+- `PATCH /api/v1/tasks/:id` - atualizar
+- `DELETE /api/v1/tasks/:id` - deletar
 
 ---
 
-## Endpoints principais
+## Testes rápidos (curl)
 
-### Auth
+1. Criar usuário:
 
-- `POST /api/v1/auth/register` → registrar usuário
-- `POST /api/v1/auth/login` → login
-- `POST /api/v1/auth/logout` → logout (JWT)
+```
+curl -X POST http://localhost:3000/api/v1/auth/register -H "Content-Type: application/json" -d '{"name":"Carol","email":"carol@example.com","password":"123456","role":"admin"}'
+```
 
-### Users
+2. Login (copiar token):
 
-- `GET /api/v1/users/` → listar todos
-- `GET /api/v1/users/:id` → buscar por ID
-- `PUT /api/v1/users/:id` → atualizar
-- `DELETE /api/v1/users/:id` → deletar
+```
+curl -X POST http://localhost:3000/api/v1/auth/login -H "Content-Type: application/json" -d '{"email":"carol@example.com","password":"123456"}'
+```
 
-### Tasks
+3. Criar tarefa:
 
-- `GET /api/v1/tasks/` → listar tasks
-- `GET /api/v1/tasks/:id` → buscar task
-- `POST /api/v1/tasks/` → criar task
-- `PATCH /api/v1/tasks/:id` → atualizar
-- `DELETE /api/v1/tasks/:id` → deletar
+```
+curl -X POST http://localhost:3000/api/v1/tasks -H "Content-Type: application/json" -H "Authorization: Bearer <TOKEN>" -d '{"title": "Task 1", "description": "Descrição da task", "dueDate": "2025-12-20"}'
+```
+
+4. Listar tarefas:
+
+```
+curl -X GET http://localhost:3000/api/v1/tasks -H "Authorization: Bearer <TOKEN>"
+```
+
+5. Atualizar tarefa:
+
+```
+curl -X PUT http://localhost:3000/api/v1/tasks/<TASK_ID> -H "Content-Type: application/json" -H "Authorization: Bearer <TOKEN>" -d '{"title": "Task 1 Atualizada", "description": "Nova descrição", "status": "in-progress", "dueDate": "2025-12-22"}'
+```
 
 ---
 
@@ -122,7 +152,37 @@ docker-compose up --build
 
 - Tokens JWT devem ser enviados no header `Authorization: Bearer <token>`.
 - Apenas usuários com papel adequado podem acessar certas rotas (RBAC).
-- Dados persistem em arquivos JSON na pasta `data/`.
+
+---
+
+## Testando Redis
+
+### Ver mensagens publicadas
+
+```
+docker exec -it redis redis-cli
+SUBSCRIBE taskEvents
+```
+
+---
+
+# Estrutura Clean Architecture
+
+## DTOs
+
+- Validam e padronizam dados recebidos nos services
+
+## Repositories
+
+- Isolam acesso ao MongoDB
+
+## Services
+
+- Contêm regras de negócio
+
+## Controllers
+
+- Recebem requisições e chamam os services
 
 ---
 
@@ -133,3 +193,9 @@ docker-compose up --build
 3. Commit (`git commit -m "feat: descrição"`)
 4. Push (`git push origin feature/xyz`)
 5. Abra Pull Request
+
+---
+
+## Licença
+
+MIT
