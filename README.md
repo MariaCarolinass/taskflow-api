@@ -154,13 +154,6 @@ curl -X PUT http://localhost:3000/api/v1/tasks/<TASK_ID> -H "Content-Type: appli
 
 ---
 
-## Observações
-
-- Tokens JWT devem ser enviados no header `Authorization: Bearer <token>`.
-- Apenas usuários com papel adequado podem acessar certas rotas (RBAC).
-
----
-
 ## Testando Redis
 
 ### Ver mensagens publicadas
