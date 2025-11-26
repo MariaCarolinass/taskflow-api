@@ -1,18 +1,27 @@
 import { createClient } from "redis";
+import dotenv from "dotenv";
+dotenv.config();
 
-async function startWorker() {
-  const client = createClient({ url: "redis://localhost:6379" });
+async function start() {
+  const client = createClient({ url: process.env.REDIS_URL || "redis://localhost:6379" });
   await client.connect();
+  const sub = client.duplicate();
+  await sub.connect();
 
-  const subscriber = client.duplicate();
-  await subscriber.connect();
-
-  await subscriber.subscribe("tasks.events", (message) => {
-    const event = JSON.parse(message);
-    console.log(`[WORKER] Evento recebido: ${event.action}`, event.task);
+  console.log("[WORKER] Listening for task events...");
+  await sub.subscribe("taskCreated", (message) => {
+    const ev = JSON.parse(message);
+    console.log("[WORKER] taskCreated", ev);
+    // enviar email, registrar métricas, etc.
   });
 
-  console.log("[WORKER] Listening to task events...");
+  await sub.subscribe("taskUpdated", (message) => {
+    console.log("[WORKER] taskUpdated", JSON.parse(message));
+  });
+
+  await sub.subscribe("taskDeleted", (message) => {
+    console.log("[WORKER] taskDeleted", JSON.parse(message));
+  });
 }
 
-startWorker();
+start().catch(err => console.error(err));
